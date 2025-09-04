@@ -136,7 +136,28 @@ function! s:is_http_url(context)
 endfunction
 
 function! s:extract_http_url(context)
-  return a:context.current_word
+  " Extract the full URL even if cursor is in the middle
+  let line = a:context.line
+  let col = a:context.col - 1
+  
+  " Find the start of the URL
+  let start = col
+  while start > 0 && line[start-1] !~ '\s'
+    let start -= 1
+  endwhile
+  
+  " Find the end of the URL  
+  let end = col
+  while end < len(line) && line[end] !~ '\s'
+    let end += 1
+  endwhile
+  
+  let url = strpart(line, start, end - start)
+  
+  " Clean up common trailing punctuation that's not part of the URL
+  let url = substitute(url, '[.,;:!?)\]}>]*$', '', '')
+  
+  return url
 endfunction
 
 function! s:is_fallback(context)
@@ -170,9 +191,16 @@ endfunction
 
 function! s:open_file(resource)
   try
-    execute 'edit ' . a:resource
+    " Handle relative paths and expand them properly
+    let file_path = fnamemodify(a:resource, ':p')
+    if filereadable(a:resource) || filereadable(file_path)
+      execute 'edit ' . fnameescape(a:resource)
+    else
+      " If file doesn't exist, still try to open it (vim will create new file)
+      execute 'edit ' . fnameescape(a:resource)
+    endif
   catch
-    echo 'Cannot open file: ' . a:resource
+    echo 'Cannot open file: ' . a:resource . ' (' . v:exception . ')'
   endtry
 endfunction
 

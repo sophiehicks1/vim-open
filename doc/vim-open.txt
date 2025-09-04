@@ -1,0 +1,78 @@
+*vim-open.txt*	Enhanced gf command for vim
+
+CONTENTS					*vim-open-contents*
+
+1. Introduction				|vim-open-introduction|
+2. Mappings				|vim-open-mappings|
+3. Configuration			|vim-open-configuration|
+4. Functions				|vim-open-functions|
+
+==============================================================================
+1. Introduction					*vim-open-introduction*
+
+vim-open is an extensible plugin designed to make the built-in |gf| command a
+little smarter. By default, vim-open enhances gf to:
+
+- Open HTTP(S) URLs in your system browser
+- Fall back to default gf behavior for everything else
+
+The plugin is fully extensible via finders and openers, allowing you to add
+support for custom patterns and opening mechanisms.
+
+==============================================================================
+2. Mappings					*vim-open-mappings*
+
+						*vim-open-gf*
+gf		Go to file/URL under cursor. If the text under cursor
+		is an HTTP(S) URL, it will be opened in the system browser.
+		Otherwise, falls back to vim's default |gf| behavior.
+
+						*vim-open-gF*
+gF		Same as gf, but for files, opens them in a new tab.
+		URLs are still opened in the browser.
+
+==============================================================================
+3. Configuration				*vim-open-configuration*
+
+vim-open provides two main extension points:
+
+1. |gopher#add_finder()| - to teach vim-open about new patterns
+2. |gopher#add_opener()| - to teach vim-open how to open resource types
+
+==============================================================================
+4. Functions					*vim-open-functions*
+
+gopher#add_finder({match_fn}, {extract_fn})		*gopher#add_finder()*
+	Add a new finder to the plugin.
+	
+	{match_fn} is a function that accepts a context object and returns
+	true if this finder can handle the current cursor context.
+	
+	{extract_fn} is a function that extracts and returns the resource
+	identifier for the text under the cursor.
+
+gopher#add_opener({can_handle_fn}, {handler})		*gopher#add_opener()*
+	Add a new opener to the plugin.
+	
+	{can_handle_fn} is a function that accepts a string and returns true
+	if this opener can handle that resource type.
+	
+	{handler} is a function that accepts a resource string and opens it
+	in the appropriate way.
+
+Example:
+>
+	" Add support for ticket IDs like CC-1234
+	function! IsTicketId(context)
+	  return a:context.current_word =~# '^[A-Z]\+-\d\+$'
+	endfunction
+	
+	function! ExtractTicketId(context)
+	  return 'https://tickets.example.com/' . a:context.current_word
+	endfunction
+	
+	call gopher#add_finder(function('IsTicketId'), function('ExtractTicketId'))
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
