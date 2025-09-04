@@ -1,8 +1,29 @@
 # vim-open - Vim Plugin Development Instructions
 
-vim-open is a Vim plugin designed to enhance the built-in `gf` command to intelligently open different types of resources (HTTP links, file paths, custom identifiers, etc.).
+vim-open is an extensible plugin designed to make the built-in `gf` command smarter by supporting different types of paths, URIs and identifiers.
 
 **Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
+
+## Plugin Architecture Overview
+
+vim-open works by extending the default `gf` mapping through a finder/opener system:
+
+**Default Behavior:**
+| Cursor on... | vim-open's `gf` will... |
+|--------------|-------------------------|
+| HTTP(S) link | Open in browser |
+| Anything else | Delegate to default `gf` |
+
+**Extensible Architecture:**
+- **Finders:** Recognize patterns and extract resource identifiers
+- **Openers:** Handle specific types of resources
+- **Context:** State object with file type, cursor location, word under cursor, etc.
+
+**Extension Examples (when implemented):**
+- Ticket IDs: `CC-1234` → opens ticket in browser
+- GitHub repos: `[sophiehicks1/vim-open]` → opens repo on GitHub
+- Chat handles: `@sophie` → opens DM in Slack/Teams/Discord
+- Images: `image.jpg` → opens in default image viewer
 
 ## Repository Current State
 
@@ -71,18 +92,36 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 5. **Custom finder/opener**: Add test finder and opener, validate they're called correctly
 
 ### Manual Validation Steps
-1. Create test file: `echo -e "https://github.com\n/tmp/test.txt\nCC-1234" > test_content.txt`
+1. Create test file: `echo -e "https://github.com\n/tmp/test.txt\nCC-1234\n[sophiehicks1/vim-open]\n@sophie\nimage.jpg" > test_content.txt`
 2. Open in Vim: `vim test_content.txt --cmd "set runtimepath+=$(pwd)"`
 3. Test each line with `gf` command:
-   - Line 1: Should open browser (when implemented)
-   - Line 2: Should open file in Vim (default behavior)
-   - Line 3: Should trigger custom handler (when implemented)
+   - Line 1: Should open browser (built-in HTTP handler)
+   - Line 2: Should open file in Vim (default behavior fallback)
+   - Line 3: Should trigger ticket system handler (when implemented)
+   - Line 4: Should open GitHub repo (when implemented)
+   - Line 5: Should open chat DM (when implemented)
+   - Line 6: Should open in image viewer (when implemented)
 
-### Expected Behavior
+**Context Object Testing:**
+- Test cursor positioning on different parts of complex patterns
+- Verify file type detection works correctly
+- Test word boundary detection for pattern matching
+
+### Expected Behavior (Detailed Examples)
+
+**Built-in Handlers:**
 - HTTP/HTTPS links: Open in system browser
-- File paths: Use default Vim `gf` behavior
-- Custom patterns: Route through appropriate finder/opener functions
-- Fallback: Always preserve original `gf` functionality
+- File paths: Use default Vim `gf` behavior (always preserved as fallback)
+
+**Extension Pattern Examples:**
+- **Image files**: Finder recognizes `.jpg/.jpeg/.png/.gif` → Opener launches default image viewer
+- **Ticket systems**: Finder matches `CC-1234` pattern → Opener constructs URL and opens in browser
+- **GitHub repos**: Finder matches `[user/repo]` pattern → Opener opens GitHub URL
+- **Chat handles**: Finder matches `@username` → Opener opens DM in configured chat client
+- **Custom protocols**: Finder extracts custom identifiers → Opener handles via custom logic
+
+**Fallback Guarantee:**
+Always preserve original `gf` functionality - if no custom finder matches, delegate to default Vim behavior
 
 ## Development Standards
 
@@ -93,10 +132,52 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 - Prefer single-quoted strings
 - Document all public functions
 
-### Plugin Functions (From README.md)
-- `gopher#add_finder(match_fn, extract_fn)` - Add pattern recognition
-- `gopher#add_opener(can_handle_fn, handler)` - Add resource opening method
-- Main `gf` mapping override in `plugin/vim-open.vim`
+### Architecture Patterns
+
+**Finder Development:**
+- Keep pattern matching focused and specific
+- Return early `false` for non-matches to improve performance
+- Use context object properties (file type, cursor position) for intelligent matching
+- Extract minimal necessary identifier - let openers handle URL construction
+- Test pattern boundaries carefully (word boundaries, special characters)
+
+**Opener Development:**
+- Use clear protocol prefixes for custom resource types (`image://`, `ticket://`, etc.)
+- Gracefully handle system command failures (browser/app not available)
+- Provide user feedback for failed operations
+- Consider platform differences (Linux: `xdg-open`, macOS: `open`, Windows: `start`)
+
+**Integration Guidelines:**
+- Most finders should return file paths or web URLs (handled by built-in openers)
+- Only add custom openers for non-standard resource types
+- Preserve context information when possible for debugging
+- Always maintain fallback to default `gf` behavior
+
+### Plugin Functions (Detailed from README.md)
+
+**Core Architecture:**
+When `gf` is invoked:
+1. Creates context object with current state (file type, cursor location, word under cursor)
+2. Passes context to each finder until one matches
+3. Finder returns resource identifier (file path, URI, link, etc.)
+4. Passes identifier to each opener until one can handle it
+5. Opener processes the resource
+
+**API Functions:**
+
+**`gopher#add_finder(match_fn, extract_fn)`**
+- `match_fn`: Function accepting context object, returns boolean if this finder can handle current cursor data
+- `extract_fn`: Function returning resource identifier for text under cursor
+- Example: JPEG finder recognizes `.jpg/.jpeg` extensions, returns `image:///path/to/image.jpg`
+
+**`gopher#add_opener(can_handle_fn, handler)`**
+- `can_handle_fn`: Function accepting string, returns true if this opener can handle that string
+- `handler`: Function accepting string and "opening" the resource (whatever that means for the resource type)
+- Example: Image opener recognizes `image://` protocol, opens in default image app
+
+**Implementation Files:**
+- `plugin/vim-open.vim` - Main `gf` mapping override and commands
+- `autoload/gopher.vim` - Core finder/opener registration and execution logic
 
 ## Common Issues and Solutions
 
@@ -122,6 +203,7 @@ Current repository contents:
 ├── .git/
 ├── .github/
 │   └── copilot-instructions.md  (this file)
+├── .gitignore
 └── README.md
 ```
 
@@ -131,6 +213,7 @@ Expected structure when implemented:
 ├── autoload/gopher.vim  
 ├── doc/vim-open.txt
 ├── README.md
+├── .gitignore
 └── .github/
     └── copilot-instructions.md
 ```
@@ -170,10 +253,14 @@ vim -c "VimOpenTest" -c "q" --cmd "set runtimepath+=$(pwd)"  # Plugin loading te
 
 **Manual testing template:**
 ```bash
-# Create test content
-echo -e "https://github.com\n/tmp/test.txt\nCC-1234" > test_content.txt
+# Create comprehensive test content
+echo -e "https://github.com\n/tmp/test.txt\nCC-1234\n[sophiehicks1/vim-open]\n@sophie\nimage.jpg" > test_content.txt
 
 # Test in Vim (when plugin implemented)
 vim test_content.txt --cmd "set runtimepath+=$(pwd)"
-# Then manually test gf on each line
+# Then manually test gf on each line to verify:
+# - HTTP links open in browser
+# - File paths use default gf behavior
+# - Custom patterns trigger appropriate handlers
+# - Context object provides correct information to finders
 ```
