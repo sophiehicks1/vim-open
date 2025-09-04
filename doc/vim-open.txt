@@ -1,0 +1,93 @@
+*vim-open.txt*	Enhanced gf command for vim
+
+CONTENTS					*vim-open-contents*
+
+1. Introduction				|vim-open-introduction|
+2. Mappings				|vim-open-mappings|
+3. Configuration			|vim-open-configuration|
+4. Functions				|vim-open-functions|
+
+==============================================================================
+1. Introduction					*vim-open-introduction*
+
+vim-open is an extensible plugin designed to make the built-in |gf| command a
+little smarter. By default, vim-open enhances gf to:
+
+- Open HTTP(S) URLs in your system browser
+- Fall back to default gf behavior for everything else
+
+The plugin is fully extensible via finders and openers, allowing you to add
+support for custom patterns and opening mechanisms.
+
+==============================================================================
+2. Mappings					*vim-open-mappings*
+
+vim-open overrides vim's built-in |gf| and |gF| mappings to provide an
+extensible system for handling different types of content under the cursor.
+
+The plugin's primary purpose is to enable users to configure custom behavior
+for different patterns they encounter in their files. By default, the plugin
+provides basic URL handling as a demonstration, but the real power comes from
+the ability to add custom finders and openers for your specific workflows.
+
+						*vim-open-gf*
+gf		Enhanced "go to file" command. Uses the configured finders
+		to recognize patterns under the cursor and the configured
+		openers to handle them appropriately. Falls back to vim's
+		built-in |gf| behavior when no custom handler matches.
+
+						*vim-open-gF*
+gF		Enhanced "go to file in new tab" command. Like gf, but
+		attempts to open files in new tabs when possible.
+		Falls back to vim's built-in |gF| behavior when no custom
+		handler matches.
+
+The default configuration recognizes HTTP(S) URLs and opens them in your
+system browser, but this is just one example of what's possible with the
+extensibility system described below.
+
+==============================================================================
+3. Configuration				*vim-open-configuration*
+
+vim-open provides two main extension points:
+
+1. |gopher#add_finder()| - to teach vim-open about new patterns
+2. |gopher#add_opener()| - to teach vim-open how to open resource types
+
+==============================================================================
+4. Functions					*vim-open-functions*
+
+gopher#add_finder({match_fn}, {extract_fn})		*gopher#add_finder()*
+	Add a new finder to the plugin.
+	
+	{match_fn} is a function that accepts a context object and returns
+	true if this finder can handle the current cursor context.
+	
+	{extract_fn} is a function that extracts and returns the resource
+	identifier for the text under the cursor.
+
+gopher#add_opener({can_handle_fn}, {handler})		*gopher#add_opener()*
+	Add a new opener to the plugin.
+	
+	{can_handle_fn} is a function that accepts a string and returns true
+	if this opener can handle that resource type.
+	
+	{handler} is a function that accepts a resource string and opens it
+	in the appropriate way.
+
+Example:
+>
+	" Add support for ticket IDs like CC-1234
+	function! IsTicketId(context)
+	  return a:context.current_word =~# '^[A-Z]\+-\d\+$'
+	endfunction
+	
+	function! ExtractTicketId(context)
+	  return 'https://tickets.example.com/' . a:context.current_word
+	endfunction
+	
+	call gopher#add_finder(function('IsTicketId'), function('ExtractTicketId'))
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
