@@ -1,0 +1,14 @@
+This is a test file for vim-open plugin.
+
+Test URLs:
+https://github.com/sophiehicks1/vim-open
+http://example.com
+
+Test files:
+README.md
+./README.md
+../vim-open/README.md
+
+Test words:
+hello
+world
