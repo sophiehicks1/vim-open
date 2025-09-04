@@ -1,0 +1,15 @@
+# Ignore Vim swap files
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+*.tmp
+/tmp/
+
+# Ignore personal vim configuration for testing
+.vimrc.local
