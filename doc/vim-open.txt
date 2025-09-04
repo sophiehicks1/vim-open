@@ -22,14 +22,29 @@ support for custom patterns and opening mechanisms.
 ==============================================================================
 2. Mappings					*vim-open-mappings*
 
+vim-open overrides vim's built-in |gf| and |gF| mappings to provide an
+extensible system for handling different types of content under the cursor.
+
+The plugin's primary purpose is to enable users to configure custom behavior
+for different patterns they encounter in their files. By default, the plugin
+provides basic URL handling as a demonstration, but the real power comes from
+the ability to add custom finders and openers for your specific workflows.
+
 						*vim-open-gf*
-gf		Go to file/URL under cursor. If the text under cursor
-		is an HTTP(S) URL, it will be opened in the system browser.
-		Otherwise, falls back to vim's default |gf| behavior.
+gf		Enhanced "go to file" command. Uses the configured finders
+		to recognize patterns under the cursor and the configured
+		openers to handle them appropriately. Falls back to vim's
+		built-in |gf| behavior when no custom handler matches.
 
 						*vim-open-gF*
-gF		Same as gf, but for files, opens them in a new tab.
-		URLs are still opened in the browser.
+gF		Enhanced "go to file in new tab" command. Like gf, but
+		attempts to open files in new tabs when possible.
+		Falls back to vim's built-in |gF| behavior when no custom
+		handler matches.
+
+The default configuration recognizes HTTP(S) URLs and opens them in your
+system browser, but this is just one example of what's possible with the
+extensibility system described below.
 
 ==============================================================================
 3. Configuration				*vim-open-configuration*

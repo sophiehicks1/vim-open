@@ -4,6 +4,7 @@
 " Storage for finders and openers
 let s:finders = []
 let s:openers = []
+let s:defaults_loaded = 0
 
 " Add a finder function
 function! gopher#add_finder(match_fn, extract_fn)
@@ -49,8 +50,26 @@ function! s:create_context()
   return context
 endfunction
 
+" Ensure defaults are loaded after user configuration
+function! s:ensure_defaults()
+  if !s:defaults_loaded
+    " HTTP(S) URL finder (added at the end)
+    call add(s:finders, {'match': function('s:is_http_url'), 'extract': function('s:extract_http_url')})
+    
+    " Browser opener for HTTP(S) URLs (added at the end)
+    call add(s:openers, {'can_handle': function('s:can_open_url'), 'handler': function('s:open_url')})
+    
+    " File opener for local files (added at the end)
+    call add(s:openers, {'can_handle': function('s:can_open_file'), 'handler': function('s:open_file')})
+    
+    let s:defaults_loaded = 1
+  endif
+endfunction
+
 " Main function called by gf mapping
+" Returns a command to execute, or empty string to fall back to default gf
 function! gopher#go()
+  call s:ensure_defaults()
   let context = s:create_context()
   
   " Try each finder in order
@@ -62,19 +81,21 @@ function! gopher#go()
         for opener in s:openers
           if opener.can_handle(resource)
             call opener.handler(resource)
-            return
+            return "\<Ignore>"
           endif
         endfor
       endif
     endif
   endfor
   
-  " If no finder/opener handled it, fall back to default gf
-  normal! gf
+  " If no finder/opener handled it, return empty to fall back to default gf
+  return "gf"
 endfunction
 
 " Function for opening in new tab (gF)
+" Returns a command to execute, or empty string to fall back to default gF
 function! gopher#go_tab()
+  call s:ensure_defaults()
   let context = s:create_context()
   
   " Try each finder in order
@@ -88,10 +109,10 @@ function! gopher#go_tab()
             " If it's a file, open in new tab, otherwise use normal handler
             if resource =~ '^/' || resource =~ '^\~' || resource =~ '^\.'
               execute 'tabnew ' . resource
-              return
+              return "\<Ignore>"
             else
               call opener.handler(resource)
-              return
+              return "\<Ignore>"
             endif
           endif
         endfor
@@ -99,35 +120,8 @@ function! gopher#go_tab()
     endif
   endfor
   
-  " If no finder/opener handled it, fall back to default gF
-  normal! gF
-endfunction
-
-" Initialize default finders and openers
-function! s:init_defaults()
-  " HTTP(S) URL finder
-  call gopher#add_finder(
-    \ function('s:is_http_url'),
-    \ function('s:extract_http_url')
-  \ )
-  
-  " Fallback finder for everything else
-  call gopher#add_finder(
-    \ function('s:is_fallback'),
-    \ function('s:extract_fallback')
-  \ )
-  
-  " Browser opener for HTTP(S) URLs
-  call gopher#add_opener(
-    \ function('s:can_open_url'),
-    \ function('s:open_url')
-  \ )
-  
-  " File opener for local files
-  call gopher#add_opener(
-    \ function('s:can_open_file'),
-    \ function('s:open_file')
-  \ )
+  " If no finder/opener handled it, return empty to fall back to default gF
+  return "gF"
 endfunction
 
 " Default finder functions
@@ -158,14 +152,6 @@ function! s:extract_http_url(context)
   let url = substitute(url, '[.,;:!?)\]}>]*$', '', '')
   
   return url
-endfunction
-
-function! s:is_fallback(context)
-  return 1  " Always matches as fallback
-endfunction
-
-function! s:extract_fallback(context)
-  return a:context.cfile
 endfunction
 
 " Default opener functions
@@ -203,6 +189,3 @@ function! s:open_file(resource)
     echo 'Cannot open file: ' . a:resource . ' (' . v:exception . ')'
   endtry
 endfunction
-
-" Initialize the plugin
-call s:init_defaults()
