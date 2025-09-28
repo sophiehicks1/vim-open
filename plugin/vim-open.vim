@@ -8,7 +8,7 @@ endif
 let g:loaded_vim_open = 1
 
 " Override the default gf mapping with expression mapping
-nnoremap <expr> <silent> gf gopher#go()
+nnoremap <silent> gf :call gopher#go()<CR>
 
 " Optional: also override gF for opening in new tab
-nnoremap <expr> <silent> gF gopher#go_tab()
+nnoremap <silent> gF :call gopher#go_tab()<CR>

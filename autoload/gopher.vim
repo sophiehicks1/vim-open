@@ -81,7 +81,7 @@ function! gopher#go()
         for opener in s:openers
           if opener.can_handle(resource)
             call opener.handler(resource)
-            return "\<Ignore>"
+            return
           endif
         endfor
       endif
@@ -89,7 +89,7 @@ function! gopher#go()
   endfor
   
   " If no finder/opener handled it, return empty to fall back to default gf
-  return "gf"
+  execute "normal! gf"
 endfunction
 
 " Function for opening in new tab (gF)
@@ -109,10 +109,10 @@ function! gopher#go_tab()
             " If it's a file, open in new tab, otherwise use normal handler
             if resource =~ '^/' || resource =~ '^\~' || resource =~ '^\.'
               execute 'tabnew ' . resource
-              return "\<Ignore>"
+              return
             else
               call opener.handler(resource)
-              return "\<Ignore>"
+              return
             endif
           endif
         endfor
@@ -121,7 +121,7 @@ function! gopher#go_tab()
   endfor
   
   " If no finder/opener handled it, return empty to fall back to default gF
-  return "gF"
+  execute "normal! gF"
 endfunction
 
 " Default finder functions
