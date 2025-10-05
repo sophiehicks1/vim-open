@@ -1,0 +1,10 @@
+gopher#add_finder()	vim-open.txt	/*gopher#add_finder()*
+gopher#add_opener()	vim-open.txt	/*gopher#add_opener()*
+vim-open-configuration	vim-open.txt	/*vim-open-configuration*
+vim-open-contents	vim-open.txt	/*vim-open-contents*
+vim-open-functions	vim-open.txt	/*vim-open-functions*
+vim-open-gF	vim-open.txt	/*vim-open-gF*
+vim-open-gf	vim-open.txt	/*vim-open-gf*
+vim-open-introduction	vim-open.txt	/*vim-open-introduction*
+vim-open-mappings	vim-open.txt	/*vim-open-mappings*
+vim-open.txt	vim-open.txt	/*vim-open.txt*

@@ -66,3 +66,93 @@ the data currently under the cursor. Else it returns false.
 
 `handler` is a function that accepts a string and "opens" the resource represented by that string (whatever
 that means).
+
+## Examples:
+
+Let's say you wanted to be able to use `gf` to be able to open `r/subreddit` addresses. You can do that with a
+finder that recognizes those links and turns them into url like this:
+
+```vimscript
+let s:subreddit_pattern = 'r/\w\+'
+
+" return true if the current WORD matches the subreddit pattern we're looking for
+function! FindSubreddit(context)
+  if a:context.WORD =~ 'r/\w\+'
+    return v:true
+  endif
+  return v:false
+endfunction
+
+" turn that into a reddit URL, so that it's handled by the URL opener
+function! ExtractSubreddit(context)
+  return 'https://reddit.com/' . matchstr(a:context.WORD, 'r/\w\+')
+endfunction
+```
+
+That would allow you to hit `gf` on any subreddit, in any file and have the right link open in your default
+browser, which is awesome... but not perfect. Sometimes it makes sense for more complex finders to add
+filetype specific support for links. For example, [this file](https://github.com/sophiehicks1/mdpp/blob/master/autoload/md/vimopen.vim)
+adds support for all link types in markdown, so you can use `gf` with your cursor anywhere on any part of any
+markdown link, and it will extract the address portion of the link and pass that through to all your
+configured openers.
+
+The problem with the subreddit example above is that it finds subreddit links in text okay, but it immediately
+converts them to URLs. It'll mostly work, but even with both the above subreddit integration and the linke
+markdown integration, the following link wouldn't work when your cursor was in the text portion of the link.
+
+```
+[link][1]
+
+[1]: r/vim
+```
+
+Here's what would happen.
+
+- The markdown finder would correctly recognize the markdown link format, extract the `r/vim` reference
+  from the address, and pass that to the openers.
+  * Since our subreddit integration only includes a finder, there's no _opener_ which knows how to open
+    subreddit links on their own, so this fails and it moves on try the next thing.
+- The subreddit finder would look at the cWORD (which is `[link][1]`), correctly identify that there's no
+  subreddit link in there and fail to trigger.
+
+So, here's a more complete subreddit integration which will work both for more complex generic finders like
+the markdown one I linked to from [MDPP](https://github.com/sophiehicks1/MDPP) above, as well as when
+subreddit links are found in plain text or elsewhere. (This is taken directly from my vim config) 
+
+```vimscript
+" If we find a subreddit match in <cWORD>, then our subreddit handlers can handle it so our finder returns
+" true
+function! FindSubreddit(context)
+  if a:context.WORD =~ 'r/\w\+'
+    return v:true
+  endif
+  return v:false
+endfunction
+
+" our extractor just returns the subreddit as an address (e.g. `'r/vim'`), because the opener is going to do
+" the rest of the work
+function! ExtractSubreddit(context)
+  return matchstr(a:context.WORD, 'r/\w\+')
+endfunction
+
+" Here we register the subreddit finder. Remember, order matters because earlier finders get precedence. This
+" one is pretty specific, so you want it after more generic finders like support for links in filetypes.
+call gopher#add_finder(function('FindSubreddit'), function('ExtractSubreddit'))
+
+" This part registers a subreddit _opener_, which knows how to convert any reddit address into a URL and hands
+" that off to `gopher#open_url`
+
+" return true if the address we're given is a subreddit string
+function! IsSubreddit(str)
+  return match(a:str, '^r/\w\+$') != -1
+endfunction
+
+" and open that as a link, using the `gopher#open_url` utility
+function! SubredditLink(str)
+  return gopher#open_url('https://reddit.com/' . a:str)
+endfunction
+
+call gopher#add_opener(function('IsSubreddit'), function('SubredditLink'))
+```
+
+

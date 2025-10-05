@@ -24,6 +24,7 @@ function! s:create_context()
   let context.col = col('.')
   let context.lnum = line('.')
   let context.word = expand('<cword>')
+  let context.WORD = expand('<cWORD>')
   let context.cfile = expand('<cfile>')
   let context.filename = expand('%:p')
   
@@ -57,10 +58,10 @@ function! s:ensure_defaults()
     call add(s:finders, {'match': function('s:is_http_url'), 'extract': function('s:extract_http_url')})
     
     " Browser opener for HTTP(S) URLs (added at the end)
-    call add(s:openers, {'can_handle': function('s:can_open_url'), 'handler': function('s:open_url')})
+    call add(s:openers, {'can_handle': function('s:can_open_url'), 'handler': function('gopher#open_url')})
     
     " File opener for local files (added at the end)
-    call add(s:openers, {'can_handle': function('s:can_open_file'), 'handler': function('s:open_file')})
+    call add(s:openers, {'can_handle': function('s:can_open_file'), 'handler': function('gopher#open_file')})
     
     let s:defaults_loaded = 1
   endif
@@ -159,7 +160,7 @@ function! s:can_open_url(resource)
   return a:resource =~? '^https\?://'
 endfunction
 
-function! s:open_url(resource)
+function! gopher#open_url(resource)
   if has('macunix')
     call system('open ' . shellescape(a:resource))
   elseif has('unix')
@@ -175,7 +176,7 @@ function! s:can_open_file(resource)
   return !empty(a:resource) && a:resource !~? '^https\?://'
 endfunction
 
-function! s:open_file(resource)
+function! gopher#open_file(resource)
   try
     " Handle relative paths and expand them properly
     let file_path = fnamemodify(a:resource, ':p')
