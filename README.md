@@ -48,10 +48,15 @@ or "open this link in a browser"
 
 ## Configuration
 
-There are two main extension points.
+There are two main extension points:
 
 1. Use `gopher#add_finder()` to teach `vim-open` about a new pattern you want it to recognize
 2. Use `gopher#add_opener()` to teach `vim-open` how to open a type of resource
+
+And two utility functions:
+
+1. Use `gopher#open_url` to open a URL in your default browser.
+2. Use `gopher#open_file` to open a file in this instance of vim.
 
 ### `gopher#add_finder(match_fn, extract_fn)`
 
@@ -59,6 +64,19 @@ There are two main extension points.
 the data currently under the cursor. Else it returns false.
 
 `extract_fn` is a function that returns the resource identifier for the text under the cursor.
+
+The context object is a dict containing the following fields:
+
+| Key      | Value                                                                       |
+|----------|-----------------------------------------------------------------------------|
+| filetype | The filetype of the current file                                            |
+| line     | The content of the current line                                             |
+| col      | The column number of the current cursor position                            |
+| lnum     | The line number of the current cursor position                              |
+| word     | The word under the cursor (i.e. what would be highlighted if you hit `viw`) |
+| WORD     | The WORD under the cursor (i.e. what would be highlighted if you hit `viW`) |
+| cfile    | The path under the cursor                                                   |
+| filename | The current file name                                                       |
 
 ### `gopher#add_opener(can_handle_fn, handler)`
 
@@ -96,9 +114,9 @@ adds support for all link types in markdown, so you can use `gf` with your curso
 markdown link, and it will extract the address portion of the link and pass that through to all your
 configured openers.
 
-The problem with the subreddit example above is that it finds subreddit links in text okay, but it immediately
-converts them to URLs. It'll mostly work, but even with both the above subreddit integration and the linke
-markdown integration, the following link wouldn't work when your cursor was in the text portion of the link.
+The problem with the subreddit example above is that it will find subreddit links in text okay, but it immediately
+converts them to URLs. It'll mostly work, but even with both the example subreddit integration above _and_ the
+markdown integration I linked to above, the following link wouldn't work if your cursor was in the text portion of the link.
 
 ```
 [link][1]
@@ -106,7 +124,7 @@ markdown integration, the following link wouldn't work when your cursor was in t
 [1]: r/vim
 ```
 
-Here's what would happen.
+With your cursor at the `|` in `[li|nk][1]`, here's what would happen.
 
 - The markdown finder would correctly recognize the markdown link format, extract the `r/vim` reference
   from the address, and pass that to the openers.
