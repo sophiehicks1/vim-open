@@ -91,7 +91,7 @@ endfunction
 
 That would allow you to hit `gf` on any subreddit, in any file and have the right link open in your default
 browser, which is awesome... but not perfect. Sometimes it makes sense for more complex finders to add
-filetype specific support for links. For example, [this file](https://github.com/sophiehicks1/mdpp/blob/master/autoload/md/vimopen.vim)
+filetype specific support for links. For example, [this plugin](https://github.com/sophiehicks1/mdpp/blob/master/autoload/md/vimopen.vim)
 adds support for all link types in markdown, so you can use `gf` with your cursor anywhere on any part of any
 markdown link, and it will extract the address portion of the link and pass that through to all your
 configured openers.
